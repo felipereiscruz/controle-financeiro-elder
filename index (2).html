@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>💰 Meus Gastos</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --bg-card: #222222;
+            --text-primary: #e4e6f0;
+            --text-secondary: #9399b8;
+            --accent-green: #00ff87;
+            --accent-red: #ff4757;
+            --accent-blue: #5f73ff;
+            --accent-purple: #a855f7;
+            --accent-orange: #ff9f43;
+            --accent-teal: #00d9c1;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 80px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+                linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+            animation: bgShift 15s ease-in-out infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-2%, -2%); }
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff, #b0b0b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .update-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .btn-planilha {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-planilha:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0.5;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .summary-item:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .summary-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .summary-value.positive { color: var(--accent-green); }
+        .summary-value.negative { color: var(--accent-red); }
+
+        .saldo-card {
+            background: linear-gradient(135deg, rgba(42, 42, 42, 0.5), rgba(58, 58, 58, 0.5));
+            border: 1px solid rgba(0, 255, 135, 0.2);
+            text-align: center;
+            animation-delay: 0.1s;
+            box-shadow: 0 4px 30px rgba(0, 255, 135, 0.05);
+        }
+
+        .saldo-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .saldo-value {
+            font-size: 42px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-green);
+            text-shadow: 0 0 30px rgba(0, 255, 135, 0.3);
+            margin-bottom: 8px;
+        }
+
+        .saldo-status {
+            font-size: 13px;
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            font-size: 22px;
+        }
+
+        .receita-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--accent-green);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left-width: 3px;
+            border-left-color: var(--accent-green);
+            transition: all 0.3s ease;
+        }
+
+        .receita-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.12);
+            border-left-color: var(--accent-green);
+        }
+
+        .receita-desc {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .receita-valor {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            animation-delay: 0.2s;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .category-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .category-item:hover {
+            transform: translateX(4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .category-info {
+            flex: 1;
+        }
+
+        .category-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .category-bar-bg {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+
+        .category-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+            background: linear-gradient(90deg, var(--color), transparent);
+        }
+
+        .category-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .category-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .despesas-list {
+            animation-delay: 0.3s;
+        }
+
+        .despesa-item {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--color);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left-width: 3px;
+        }
+
+        .despesa-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .despesa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 8px;
+        }
+
+        .despesa-desc {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .despesa-valor {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+
+        .despesa-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .despesa-categoria {
+            background: rgba(95, 115, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--accent-blue);
+        }
+
+        .despesa-vencimento {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .cat-gastos-fixos { --color: var(--accent-blue); }
+        .cat-alimentacao { --color: var(--accent-orange); }
+        .cat-transporte { --color: var(--accent-teal); }
+        .cat-lazer { --color: var(--accent-purple); }
+        .cat-saude { --color: var(--accent-red); }
+        .cat-outros { --color: var(--text-secondary); }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .refresh-button {
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-button:hover {
+            background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Tela de Login */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 48px 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff, #b0b0b0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 18px;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            letter-spacing: 4px;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+        }
+
+        .error-login {
+            color: var(--accent-red);
+            font-size: 13px;
+            min-height: 20px;
+            margin-bottom: 8px;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 16px 12px; }
+            .card { padding: 20px; }
+            .saldo-value { font-size: 36px; }
+            .summary-value { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div class="login-icon">🔒</div>
+            <h2 class="login-title">Acesso Restrito</h2>
+            <p class="login-subtitle">Digite a senha para continuar</p>
+            <input 
+                type="password" 
+                id="passwordInput" 
+                class="password-input" 
+                placeholder="Digite a senha"
+                autocomplete="off"
+            >
+            <div class="error-login" id="errorLogin"></div>
+            <button class="btn-login" onclick="verificarSenha()">Entrar</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>💰 Controle Financeiro</h1>
+            <div class="subtitle">Atualização Automática</div>
+            <div class="update-status">
+                <div class="status-dot"></div>
+                <span id="lastUpdate">Carregando...</span>
+            </div>
+            <a href="https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit" target="_blank" class="btn-planilha" id="btnPlanilha">
+                📊 Abrir Planilha
+            </a>
+        </header>
+
+        <div id="errorContainer"></div>
+
+        <!-- Saldo -->
+        <div class="card saldo-card">
+            <div class="saldo-label">Saldo Atual</div>
+            <div class="saldo-value" id="saldo">--</div>
+            <div class="saldo-status" id="saldoStatus">--</div>
+        </div>
+
+        <!-- Resumo -->
+        <div class="card">
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">💰 Receitas</div>
+                    <div class="summary-value positive" id="receitas">--</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">💸 Despesas</div>
+                    <div class="summary-value negative" id="despesas">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Receitas Detalhadas -->
+        <div class="card">
+            <div class="section-title">
+                <span class="section-icon">💵</span>
+                Minhas Receitas
+            </div>
+            <div id="receitas-list"></div>
+        </div>
+
+        <!-- Gráfico de Pizza -->
+        <div class="card chart-container">
+            <div class="section-title">
+                <span class="section-icon">📊</span>
+                Distribuição de Despesas
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfico de Barras -->
+        <div class="card chart-container">
+            <div class="section-title">
+                <span class="section-icon">📈</span>
+                Despesas por Categoria
+            </div>
+            <div id="categorias-chart"></div>
+        </div>
+
+        <!-- Lista de Despesas -->
+        <div class="card despesas-list">
+            <div class="section-title">
+                <span class="section-icon">📋</span>
+                Todas as Despesas
+            </div>
+            <div id="despesas-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Senha de acesso
+        const SENHA_CORRETA = '3004';
+        
+        // ID da planilha
+        const SPREADSHEET_ID = '14P_5dTLcEww05d8Ok9W1hdBLSNd0qRtNq8_CIGhS87c';
+        
+        // URL da API do Google Apps Script
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxTFaNVXL_0pECt0s-tgIEDIDNN4MPKcguxOTnSWcHHxdcePdAIbQRWNXGd_1BTm9J6/exec';
+
+        let dados = null;
+        let pieChart = null;
+        let ultimaAtualizacao = null;
+
+        // Verificar senha ao carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            const senhaArmazenada = sessionStorage.getItem('senhaCorreta');
+            if (senhaArmazenada === 'true') {
+                liberarAcesso();
+            } else {
+                document.getElementById('passwordInput').focus();
+            }
+            
+            // Enter para enviar senha
+            document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    verificarSenha();
+                }
+            });
+        });
+
+        function verificarSenha() {
+            const input = document.getElementById('passwordInput');
+            const senha = input.value;
+            const errorDiv = document.getElementById('errorLogin');
+            
+            if (senha === SENHA_CORRETA) {
+                errorDiv.textContent = '';
+                sessionStorage.setItem('senhaCorreta', 'true');
+                liberarAcesso();
+            } else {
+                errorDiv.textContent = '❌ Senha incorreta!';
+                input.value = '';
+                input.focus();
+                
+                // Animar erro
+                input.style.borderColor = 'var(--accent-red)';
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                }, 500);
+            }
+        }
+
+        function liberarAcesso() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            carregarDados();
+        }
+
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor);
+        }
+
+        function normalizarCategoria(cat) {
+            return 'cat-' + cat.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, '-');
+        }
+
+        function mostrarErro(mensagem) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `
+                <div class="error-message">
+                    ⚠️ ${mensagem}
+                    <br>
+                    <button class="refresh-button" onclick="carregarDados()">Tentar Novamente</button>
+                </div>
+            `;
+        }
+
+        function limparErro() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        async function carregarDados() {
+            try {
+                limparErro();
+
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar dados');
+                }
+                
+                const novosDados = await response.json();
+                
+                // Verificar se houve mudanças
+                if (JSON.stringify(novosDados) !== ultimaAtualizacao) {
+                    dados = novosDados;
+                    ultimaAtualizacao = JSON.stringify(novosDados);
+                    renderizarTudo();
+                }
+                
+                atualizarStatus();
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarErro('Erro ao carregar dados da planilha. Verifique se o script foi implantado corretamente.');
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        function renderizarReceitas() {
+            const container = document.getElementById('receitas-list');
+            container.innerHTML = '';
+            
+            dados.receitas.forEach(rec => {
+                const item = document.createElement('div');
+                item.className = 'receita-item';
+                
+                item.innerHTML = `
+                    <div class="receita-desc">${rec.descricao}</div>
+                    <div class="receita-valor">${formatarMoeda(rec.valor)}</div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        function renderizarGraficoPizza() {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (pieChart) {
+                pieChart.destroy();
+            }
+            
+            const cores = [
+                '#5f73ff', // Gastos Fixos
+                '#ff9f43', // Alimentação
+                '#00d9c1', // Transporte
+                '#a855f7', // Lazer
+                '#ff4757', // Saúde
+                '#9399b8'  // Outros
+            ];
+            
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dados.categorias.map(c => c.categoria),
+                    datasets: [{
+                        data: dados.categorias.map(c => c.total),
+                        backgroundColor: cores,
+                        borderColor: '#1a1f3a',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e4e6f0',
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    family: 'DM Sans'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = formatarMoeda(context.raw);
+                                    const percent = context.parsed.toFixed(1) + '%';
+                                    return `${label}: ${value} (${percent})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderizarTudo() {
+            // Atualizar resumo
+            document.getElementById('saldo').textContent = formatarMoeda(dados.saldo);
+            document.getElementById('saldoStatus').textContent = dados.saldo >= 0 ? '✅ Positivo' : '⚠️ Negativo';
+            document.getElementById('receitas').textContent = formatarMoeda(dados.total_receitas);
+            document.getElementById('despesas').textContent = formatarMoeda(dados.total_despesas);
+            
+            // Renderizar receitas
+            renderizarReceitas();
+            
+            // Renderizar gráfico de pizza
+            renderizarGraficoPizza();
+            
+            // Renderizar categorias (barras)
+            const categoriasContainer = document.getElementById('categorias-chart');
+            categoriasContainer.innerHTML = '';
+            
+            dados.categorias.forEach((cat, index) => {
+                const item = document.createElement('div');
+                item.className = `category-item ${normalizarCategoria(cat.categoria)}`;
+                
+                item.innerHTML = `
+                    <div class="category-info">
+                        <div class="category-name">${cat.categoria}</div>
+                        <div class="category-bar-bg">
+                            <div class="category-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="category-stats">
+                            <span class="category-value">${formatarMoeda(cat.total)}</span>
+                            <span>${cat.percentual.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `;
+                
+                categoriasContainer.appendChild(item);
+                
+                setTimeout(() => {
+                    const bar = item.querySelector('.category-bar');
+                    bar.style.width = cat.percentual + '%';
+                }, 100 + (index * 100));
+            });
+            
+            // Renderizar despesas
+            const despesasContainer = document.getElementById('despesas-list');
+            despesasContainer.innerHTML = '';
+            
+            dados.despesas.forEach(desp => {
+                const item = document.createElement('div');
+                item.className = `despesa-item ${normalizarCategoria(desp.categoria)}`;
+                
+                item.innerHTML = `
+                    <div class="despesa-header">
+                        <div class="despesa-desc">${desp.descricao}</div>
+                        <div class="despesa-valor">${formatarMoeda(desp.valor)}</div>
+                    </div>
+                    <div class="despesa-footer">
+                        <div class="despesa-categoria">${desp.categoria}</div>
+                        <div class="despesa-vencimento">${desp.vencimento}</div>
+                    </div>
+                `;
+                
+                despesasContainer.appendChild(item);
+            });
+        }
+
+        function atualizarStatus() {
+            const agora = new Date();
+            const horaFormatada = agora.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('lastUpdate').textContent = `Atualizado ${horaFormatada}`;
+        }
+
+        // Atualizar automaticamente a cada 5 segundos (detecta mudanças)
+        setInterval(() => {
+            const senhaArmazenada = sessionStorage.getItem('senhaCorreta');
+            if (senhaArmazenada === 'true') {
+                carregarDados();
+            }
+        }, 5000);
+
+        // Atualizar quando a página voltar ao foco
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                carregarDados();
+            }
+        });
+
+        // Atualizar botão da planilha se tiver ID
+        if (SPREADSHEET_ID !== 'SEU_ID_AQUI') {
+            document.getElementById('btnPlanilha').href = 
+                `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit`;
+        }
+    </script>
+</body>
+</html>
