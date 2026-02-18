@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>💰 Meus Gastos</title>
+    <title>Controle Financeiro 💰</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -238,6 +238,7 @@
             font-size: 13px;
             color: var(--accent-green);
             font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .section-title {
@@ -593,6 +594,51 @@
             transform: translateY(0);
         }
 
+        .month-selector {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .month-select {
+            background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239399b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 12px;
+            padding-right: 36px;
+        }
+
+        .month-select:hover {
+            background-color: #3a3a3a;
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .month-select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .month-select option {
+            background: #2a2a2a;
+            color: var(--text-primary);
+        }
+
         @media (max-width: 480px) {
             .container { padding: 16px 12px; }
             .card { padding: 20px; }
@@ -635,6 +681,22 @@
             <a href="https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/edit" target="_blank" class="btn-planilha" id="btnPlanilha">
                 📊 Abrir Planilha
             </a>
+            <div class="month-selector">
+                <select class="month-select" id="mesSeletor" onchange="trocarMes()">
+                    <option value="Janeiro">Janeiro</option>
+                    <option value="Fevereiro">Fevereiro</option>
+                    <option value="Março">Março</option>
+                    <option value="Abril">Abril</option>
+                    <option value="Maio">Maio</option>
+                    <option value="Junho">Junho</option>
+                    <option value="Julho">Julho</option>
+                    <option value="Agosto">Agosto</option>
+                    <option value="Setembro">Setembro</option>
+                    <option value="Outubro">Outubro</option>
+                    <option value="Novembro">Novembro</option>
+                    <option value="Dezembro">Dezembro</option>
+                </select>
+            </div>
         </header>
 
         <div id="errorContainer"></div>
@@ -704,17 +766,31 @@
         const SENHA_CORRETA = '0311';
         
         // ID da planilha
-        const SPREADSHEET_ID = '1_A_z7QKgEI8MWbBTr3ABIop6vV1lhGBgKYEjIQhQ5JI';
+        const SPREADSHEET_ID = '1epQnDzpSnnpX5sJ_07DFEJLDHu7jkzxcFOeHjHJzwHo';
         
         // URL da API do Google Apps Script
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzArJ-EdF0FfZQcYtgUMy91aURfGlqngeIeoSOiaDaL-xDA4KgnhJ_Ce9GyfJ4AYVt-/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbz7FPAVM5oI6lOqDIjPdmwloIjanFuUa_3FBlQ5C2FrG9beDUaizhovg3iXRX6zHTliew/exec';
 
         let dados = null;
         let pieChart = null;
         let ultimaAtualizacao = null;
+        let mesSelecionado = 'Janeiro';
 
         // Verificar senha ao carregar
         window.addEventListener('DOMContentLoaded', () => {
+            // Restaurar último mês ou usar mês atual
+            const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+            const mesSalvo = localStorage.getItem('mesSelecionado');
+            const mesParaUsar = mesSalvo || meses[new Date().getMonth()];
+            mesSelecionado = mesParaUsar;
+            const seletor = document.getElementById('mesSeletor');
+            for (let i = 0; i < seletor.options.length; i++) {
+                if (seletor.options[i].value === mesParaUsar) {
+                    seletor.selectedIndex = i;
+                    break;
+                }
+            }
+
             const senhaArmazenada = sessionStorage.getItem('senhaCorreta');
             if (senhaArmazenada === 'true') {
                 liberarAcesso();
@@ -729,6 +805,13 @@
                 }
             });
         });
+
+        function trocarMes() {
+            mesSelecionado = document.getElementById('mesSeletor').value;
+            localStorage.setItem('mesSelecionado', mesSelecionado);
+            ultimaAtualizacao = null;
+            carregarDados();
+        }
 
         function verificarSenha() {
             const input = document.getElementById('passwordInput');
@@ -790,8 +873,8 @@
             try {
                 limparErro();
 
-                const response = await fetch(API_URL);
-                
+                const url = `${API_URL}?mes=${encodeURIComponent(mesSelecionado)}`;
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error('Erro ao buscar dados');
                 }
@@ -892,8 +975,18 @@
 
         function renderizarTudo() {
             // Atualizar resumo
-            document.getElementById('saldo').textContent = formatarMoeda(dados.saldo);
-            document.getElementById('saldoStatus').textContent = dados.saldo >= 0 ? '✅ Positivo' : '⚠️ Negativo';
+            const positivo = dados.saldo >= 0;
+            const corSaldo = positivo ? 'var(--accent-green)' : 'var(--accent-red)';
+            const saldoEl = document.getElementById('saldo');
+            saldoEl.textContent = formatarMoeda(dados.saldo);
+            saldoEl.style.color = corSaldo;
+            saldoEl.style.textShadow = positivo ? '0 0 30px rgba(0, 255, 135, 0.3)' : '0 0 30px rgba(255, 71, 87, 0.3)';
+            const saldoStatus = document.getElementById('saldoStatus');
+            saldoStatus.textContent = positivo ? '✅ Positivo' : '❌ Negativo';
+            saldoStatus.style.color = corSaldo;
+            const saldoCard = document.querySelector('.saldo-card');
+            saldoCard.style.borderColor = positivo ? 'rgba(0, 255, 135, 0.2)' : 'rgba(255, 71, 87, 0.2)';
+            saldoCard.style.boxShadow = positivo ? '0 4px 30px rgba(0, 255, 135, 0.05)' : '0 4px 30px rgba(255, 71, 87, 0.05)';
             document.getElementById('receitas').textContent = formatarMoeda(dados.total_receitas);
             document.getElementById('despesas').textContent = formatarMoeda(dados.total_despesas);
             
